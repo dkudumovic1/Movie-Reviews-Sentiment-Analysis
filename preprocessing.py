@@ -49,3 +49,10 @@ dictionary, x_train_vector, x_test_vector = feature_extraction.get_tfidf_vector(
 #x_test_vector.shape - (7500, 26599)
 
 # %%
+#WORD2VEC EMBEDDING - ovo se izvrsava oko 10 minuta
+model = feature_extraction.create_word2vec_model(x_train['review'], x_test['review']) 
+x_train_vector, x_test_vector = feature_extraction.get_word2vec_embedding(model, x_train['review'], x_test['review']) 
+#x_train_vector.shape - (42500, 200)
+#x_test_vector.shape - (7500, 200)
+
+# %%

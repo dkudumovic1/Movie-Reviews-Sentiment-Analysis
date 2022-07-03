@@ -1,4 +1,7 @@
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+import gensim
+import numpy as np
+import pandas as pd
 
 #count vectorizer
 def get_count_vector(x_train, x_test, remove_stopwords=False):
@@ -29,4 +32,59 @@ def get_tfidf_vector(x_train, x_test, remove_stopwords=False, ngram_range = None
     
     return tfidf.vocabulary_, x_train_vector, x_test_vector
 
+def word_vector(model_w2v, tokens, size):
+    vec = np.zeros(size).reshape((1, size))
+    count = 0
+    for word in tokens:
+        try:
+            vec += model_w2v.wv[word].reshape((1, size))
+            count += 1.
+        except KeyError:  # handling the case where the token is not in vocabulary
+            continue
+    if count != 0:
+        vec /= count
+    return vec
+
+def create_word2vec_model(x_train, x_test):
+    x_train_tokenized = x_train.apply(lambda x: x.split()) 
+    x_test_tokenized = x_test.apply(lambda x: x.split())
+    
+    x_train_len = len(x_train)
+    x_test_len = len(x_test)
+    
+    model_w2v = gensim.models.Word2Vec(
+            x_train_tokenized,
+            vector_size=200, # desired no. of features/independent variables
+            window=5, # context window size
+            min_count=10, # Ignores all words with total frequency lower than 10.                                  
+            sg = 1, # 1 for skip-gram model
+            hs = 0,
+            negative = 10, # for negative sampling
+            workers= 32, # no.of cores
+            seed = 34
+    )
+    
+    model_w2v.train(x_train_tokenized, total_examples= x_train_len, epochs=20)
+    
+    return model_w2v
+ 
+def get_word2vec_embedding(model, x_train, x_test):
+    x_train_tokenized = x_train.apply(lambda x: x.split()) 
+    x_test_tokenized = x_test.apply(lambda x: x.split())
+    
+    x_train_len = len(x_train)
+    x_test_len = len(x_test)
+    
+    x_train_vector = np.zeros((x_train_len, 200))
+    for i in range(x_train_len):
+        x_train_vector[i,:] = word_vector(model, x_train_tokenized[i], 200)
+    x_train_vector = pd.DataFrame(x_train_vector)
+    
+    x_test_vector = np.zeros((x_test_len, 200))
+    for i in range(x_test_len):
+        x_test_vector[i,:] = word_vector(model, x_test_tokenized[i], 200)
+    x_test_vector = pd.DataFrame(x_test_vector)
+    
+    return x_train_vector, x_test_vector
+    
     
