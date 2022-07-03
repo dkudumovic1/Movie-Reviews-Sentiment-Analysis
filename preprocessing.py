@@ -57,7 +57,7 @@ x_train_vector, x_test_vector = feature_extraction.get_word2vec_embedding(model,
 #x_test_vector.shape - (7500, 200)
 
 # %%
-#GLOVE EMBEDDING - ovo se izvrsava oko 2 minute
+#GLOVE EMBEDDING
 dirname = os.path.dirname(__file__)
 filepath = os.path.join(dirname, 'glove.6B.200d.txt')
     
