@@ -42,3 +42,10 @@ dictionary, x_train_vector, x_test_vector = feature_extraction.get_count_vector(
 #x_test_vector.shape - (7500, 26599)
 
 # %%
+#TF-IDF
+dictionary, x_train_vector, x_test_vector = feature_extraction.get_tfidf_vector(x_train['review'], x_test['review'], remove_stopwords=False, ngram_range=None)
+#len(dictionary) - 26599
+#x_train_vector.shape - (42500, 26599)
+#x_test_vector.shape - (7500, 26599)
+
+# %%
