@@ -1,4 +1,6 @@
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from gensim.scripts.glove2word2vec import glove2word2vec
+from gensim.models import KeyedVectors
 import gensim
 import numpy as np
 import pandas as pd
@@ -32,6 +34,7 @@ def get_tfidf_vector(x_train, x_test, remove_stopwords=False, ngram_range = None
     
     return tfidf.vocabulary_, x_train_vector, x_test_vector
 
+#helper function for word2vec
 def word_vector(model_w2v, tokens, size):
     vec = np.zeros(size).reshape((1, size))
     count = 0
@@ -86,5 +89,52 @@ def get_word2vec_embedding(model, x_train, x_test):
     x_test_vector = pd.DataFrame(x_test_vector)
     
     return x_train_vector, x_test_vector
+
+
+#helper function for glove
+def glove_word_vector(model, tokens, size):
+    
+    vec = np.zeros(size).reshape((1, size))
+    count = 0
+    for word in tokens:
+        try:
+            vec += model.get_vector(word)
+            count += 1.
+        except KeyError:  # handling the case where the token is not in vocabulary
+            continue
+    if count != 0:
+        vec /= count
+    return vec
+
+def load_glove_model(filepath, outputfile):
+    glove2word2vec(filepath, outputfile)
+    
+    model = KeyedVectors.load_word2vec_format(outputfile, binary=False)
+    
+    return model
+
+def get_glove_embedding(model, x_train, x_test):
+    x_train_tokenized = x_train.apply(lambda x: x.split()) 
+    x_test_tokenized = x_test.apply(lambda x: x.split())
+    
+    x_train_len = len(x_train)
+    x_test_len = len(x_test)
+    
+    x_train_vector = np.zeros((x_train_len, 200))
+    for i in range(x_train_len):
+        x_train_vector[i,:] = glove_word_vector(model, x_train_tokenized[i], 200)
+    x_train_vector = pd.DataFrame(x_train_vector)
+    
+    x_test_vector = np.zeros((x_test_len, 200))
+    for i in range(x_test_len):
+        x_test_vector[i,:] = glove_word_vector(model, x_test_tokenized[i], 200)
+    x_test_vector = pd.DataFrame(x_test_vector)
+    
+    return x_train_vector, x_test_vector
+    
+    
+
+
+    
     
     

@@ -4,6 +4,7 @@ from utils import preprocessing
 from utils import feature_extraction
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import os
 
 
 #%%
@@ -54,5 +55,18 @@ model = feature_extraction.create_word2vec_model(x_train['review'], x_test['revi
 x_train_vector, x_test_vector = feature_extraction.get_word2vec_embedding(model, x_train['review'], x_test['review']) 
 #x_train_vector.shape - (42500, 200)
 #x_test_vector.shape - (7500, 200)
+
+# %%
+#GLOVE EMBEDDING - ovo se izvrsava oko 2 minute
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, 'glove.6B.200d.txt')
+    
+word2vec_output_file = 'glove.6B.200d' +'.word2vec'
+
+model = feature_extraction.load_glove_model(filepath, word2vec_output_file)
+x_train_vector, x_test_vector = feature_extraction.get_glove_embedding(model, x_train['review'], x_test['review'])
+#x_train_vector.shape - (42500, 200)
+#x_test_vector.shape - (7500, 200)
+
 
 # %%
