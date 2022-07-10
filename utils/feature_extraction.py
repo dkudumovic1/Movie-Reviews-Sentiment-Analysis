@@ -117,8 +117,6 @@ def load_glove_model(filepath, outputfile):
     
     return model
 
-#BILSTM
-
 def get_glove_embedding(model, x_train, x_test):
     x_train_tokenized = x_train.apply(lambda x: x.split()) 
     x_test_tokenized = x_test.apply(lambda x: x.split())
@@ -138,6 +136,7 @@ def get_glove_embedding(model, x_train, x_test):
     
     return x_train_vector, x_test_vector
 
+#BILSTM
 
 def fit_transform_word(model, data):
     # determine the dimensionality of vectors
