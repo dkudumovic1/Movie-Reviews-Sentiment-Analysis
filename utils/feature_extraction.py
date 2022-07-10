@@ -4,6 +4,7 @@ from gensim.models import KeyedVectors
 import gensim
 import numpy as np
 import pandas as pd
+from keras.preprocessing.text import Tokenizer
 
 #count vectorizer
 def get_count_vector(x_train, x_test, ngram_range=None, min_df=0.0002, remove_stopwords=False):
@@ -134,10 +135,52 @@ def get_glove_embedding(model, x_train, x_test):
     x_test_vector = pd.DataFrame(x_test_vector)
     
     return x_train_vector, x_test_vector
+
+#BILSTM
+
+def fit_transform_word(model, data):
+    # determine the dimensionality of vectors
+    dim = model.get_vector('king').shape[0]
+
+    # the final vector
+    X = np.zeros((len(data), dim))
+    emptycount = 0
     
+    i = 0
+    for word in data.items(): 
+        
+        embedding_vector = None
+        
+        try:
+            embedding_vector = model.get_vector(word[0])
+        except KeyError:
+            pass   
+        
+        if embedding_vector is not None:
+            X[i] = embedding_vector
+        else  :
+            emptycount += 1
+            
+        i += 1
+        
+        
+    print("Numer of samples with no words found: %s / %s" % (emptycount, len(data)))
+    
+    return X
     
 
-
+def get_dictionary(df, num_words=10000):
     
+    tokenizer = Tokenizer(num_words=num_words)
+    tokenizer.fit_on_texts(df['review'])
+    words_to_index = tokenizer.word_index
+    
+    return tokenizer, words_to_index
+
+def get_glove_embedding_BiLSTM(model, dictionary):
+    
+    embedding = fit_transform_word(model, dictionary)
+    
+    return embedding
     
     
