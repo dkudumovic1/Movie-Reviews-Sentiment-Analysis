@@ -6,16 +6,19 @@ import numpy as np
 import pandas as pd
 
 #count vectorizer
-def get_count_vector(x_train, x_test, remove_stopwords=False):
+def get_count_vector(x_train, x_test, ngram_range=None, min_df=0.0002, remove_stopwords=False):
+    cv = CountVectorizer(min_df=min_df)
 
-    cv = CountVectorizer(min_df=0.0002)
+    if ngram_range != None:
+        cv.ngram_range = ngram_range
+
     if remove_stopwords:
         cv.stop_words = 'english'
-        
+
     cv.fit(x_train)
     x_train_vector = cv.transform(x_train)
     x_test_vector = cv.transform(x_test)
-    
+
     return cv.vocabulary_, x_train_vector, x_test_vector
 
 def get_tfidf_vector(x_train, x_test, remove_stopwords=False, ngram_range = None):
