@@ -6,19 +6,19 @@ from gensim.parsing.preprocessing import remove_stopwords
 import string
 string.punctuation
 
-def remove_na(df):
-    df = df.dropna(subset = ['review'])
+def remove_na(df, column):
+    df = df.dropna(subset = [column])
     df = df.reset_index(drop = True)
 
     return df
 
-def fill_na(df):
-    df['review'] = df['review'].fillna('')
+def fill_na(df, column):
+    df[column] = df[column].fillna('')
     
     return df
 
-def preprocess_reviews(df):
-    df['review'] = df['review'].transform(func = preprocess_review)
+def preprocess_reviews(df, column='review'):
+    df[column] = df[column].transform(func = preprocess_review)
 
     return df
     
@@ -53,8 +53,8 @@ def preprocess_review(s):
     
     return s
 
-def remove_punctuation(df):
-    df['review'] = df['review'].transform(remove_punct)
+def remove_punctuation(df, column='review'):
+    df[column] = df[column].transform(remove_punct)
 
     return df
 
