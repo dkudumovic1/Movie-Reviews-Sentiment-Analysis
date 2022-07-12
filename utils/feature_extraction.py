@@ -169,10 +169,10 @@ def fit_transform_word(model, data):
     return X
     
 
-def get_dictionary(df, num_words=10000):
+def get_dictionary(df, num_words=10000, column_name='review'):
     
     tokenizer = Tokenizer(num_words=num_words)
-    tokenizer.fit_on_texts(df['review'])
+    tokenizer.fit_on_texts(df[column_name])
     words_to_index = tokenizer.word_index
     
     return tokenizer, words_to_index

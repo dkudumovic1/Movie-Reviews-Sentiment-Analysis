@@ -45,15 +45,15 @@ else:
     
 
 #%%
-def padding_(sentences, seq_len):
+def padding(sentences, seq_len):
     features = np.zeros((len(sentences), seq_len),dtype=int)
     for ii, review in enumerate(sentences):
         if len(review) != 0:
             features[ii, -len(review):] = np.array(review)[:seq_len]
     return features
 
-x_train_pad = padding_(np.array(X_train_indices),100)
-x_test_pad = padding_(np.array(X_test_indices),100)
+x_train_pad = padding(np.array(X_train_indices),100)
+x_test_pad = padding(np.array(X_test_indices),100)
 
 #%%
 #TENSOR DATASETS, DATALOADERS
@@ -206,7 +206,7 @@ for epoch in range(epochs):
 
 
 #%%
-
+#testing
 model.load_state_dict(torch.load('./state_dict.pt'), strict=False)
 
 test_losses = []
@@ -256,4 +256,93 @@ print("Precision: ", precision)
 recall = TP / (TP + FN)
 print("Recal:", recall)
 print("F1", 2 * (precision * recall) / (precision + recall))
+# %%
+#neutral dataset
+neutral = pd.read_csv('neutral_dataset.csv', converters = {'Phrase': str})
+
+#GLOVE
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, 'glove.6B.200d.txt')
+word2vec_output_file = 'glove.6B.200d' +'.word2vec'
+
+model = feature_extraction.load_glove_model(filepath, word2vec_output_file)
+tokenizer, dictionary = feature_extraction.get_dictionary(x_train)
+embedding = feature_extraction.get_glove_embedding_BiLSTM(model,dictionary)
+
+print(f'Length of vocabulary is {len(dictionary)}')
+
+neutral_indices = tokenizer.texts_to_sequences(neutral['Phrase'])
+neutral_pad = padding(np.array(neutral_indices),100)
+
+batch_size = 64
+
+neutral_data = TensorDataset(torch.from_numpy(neutral_pad), torch.from_numpy(neutral['Sentiment'].to_numpy()))
+neutral_loader = DataLoader(neutral_data, shuffle=False, batch_size=batch_size, drop_last=True)
+
+#%%
+#predictions
+model = SentimentRNN(no_layers,vocab_size,hidden_dim,embedding_dim,drop_prob=0.5)
+model.to(device)
+print(model)
+
+#LOSS AND OPTIMISATION FUNCTIONS
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+model.load_state_dict(torch.load('./state_dict.pt'), strict=False)
+
+#%%
+test_losses = []
+num_correct = 0
+h = model.init_hidden(batch_size)
+TP = 0
+TN = 0
+FP = 0
+FN = 0
+NP = 0 #neutral positive
+NN = 0 #neutral negative
+
+model.eval()
+for inputs, labels in neutral_loader:
+    h = tuple([each.data for each in h])
+    inputs, labels = inputs.to(device), labels.to(device)
+    output, h = model(inputs, h)
+#    test_loss = criterion(output.squeeze(), labels.float())
+#    test_losses.append(test_loss.item())
+    pred = torch.round(output.squeeze())  # Rounds the output to 0/1
+#    correct_tensor = pred.eq(labels.float().view_as(pred))
+#    correct = np.squeeze(correct_tensor.cpu().numpy())
+    
+    
+    for i in range(0, len(pred)):
+        prediction = pred.cpu().detach().numpy()[i]
+        true = labels[i]
+        
+        if prediction == 1 and (true == 1 or true == 0):
+            FP += 1
+        elif prediction == 1 and (true == 3 or true == 4):
+            TP += 1
+        elif prediction == 0 and (true == 1 or true == 0) :
+            TN += 1
+        elif prediction == 0 and (true == 3 or true == 4):
+            FN += 1
+        elif prediction == 1 and true == 2:
+            NP += 1
+        elif prediction == 0 and true == 2:
+            NN += 1
+            
+
+test_acc = (TP+TN)/(TP+TN+FP+FN)
+print("Test accuracy: {:.3f}%".format(test_acc*100))
+print("TP: ", TP)
+print("TN: ", TN)
+print("FP: ", FP)
+print("FN: ", FN)
+print("NP: ", NP)
+print("NN: ", NN)
+#precision = TP / (TP + FP)
+#print("Precision: ", precision)
+#recall = TP / (TP + FN)
+#print("Recal:", recall)
+#print("F1", 2 * (precision * recall) / (precision + recall))
 # %%
