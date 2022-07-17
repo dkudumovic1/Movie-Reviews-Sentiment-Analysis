@@ -2,7 +2,6 @@
 import pandas as pd
 from utils import preprocessing
 
-
 #CLEANING DATASET
 train = pd.read_csv('train.tsv', sep='\t')
 test = pd.read_csv('test.tsv', sep='\t')
@@ -30,6 +29,6 @@ df.columns = ['id', 'SentenceId', 'Phrase', 'Sentiment']
 df = df.drop('id', axis=1)
 df = preprocessing.remove_na(df, 'Sentiment')
 df['Sentiment'] = df['Sentiment'].astype('int')
-df = preprocessing.preprocess_reviews(df, 'Phrase')
-df = preprocessing.remove_punctuation(df, 'Phrase')
-df.to_csv('neutral-dataset-preprocessed.csv', index = False, encoding='utf-8')
+#df = preprocessing.preprocess_reviews(df, 'Phrase')
+#df = preprocessing.remove_punctuation(df, 'Phrase')
+df.to_csv('neutral_dataset_without_preprocessing.csv', index = False, encoding='utf-8')
