@@ -124,3 +124,6 @@ draw_plot_for_common_ngrams(df[df.Sentiment==4]['Phrase'], 3, 20, "Common Trigra
 
 
 # %%
+draw_plot_for_common_ngrams(df['Phrase'], 1, 20, "Common Unigrams in Text", 2)
+
+# %%
