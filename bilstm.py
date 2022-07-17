@@ -11,10 +11,10 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 
-x_train = pd.read_csv('x_train.csv', converters = {'review': str})
-x_test = pd.read_csv('x_test.csv', converters = {'review': str})
-y_train = pd.read_csv('y_train.csv')
-y_test = pd.read_csv('y_test.csv')
+x_train = pd.read_csv('data/x_train_full_preprocessing.csv', converters = {'review': str})
+x_test = pd.read_csv('data/x_test_full_preprocessing.csv', converters = {'review': str})
+y_train = pd.read_csv('data/y_train_full_preprocessing.csv')
+y_test = pd.read_csv('data/y_test_full_preprocessing.csv')
 
 #%%
 #GLOVE
@@ -86,10 +86,10 @@ class SentimentRNN(nn.Module):
         self.lstm = nn.LSTM(input_size=embedding_dim,hidden_size=self.hidden_dim,
                            num_layers=no_layers, batch_first=True, bidirectional = True)
         
-        self.maxpool = nn.MaxPool1d(4) # Where 4 is kernal size
+    #    self.maxpool = nn.MaxPool1d(4) # Where 4 is kernal size
         
         # dropout layer
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.05)
     
         # linear and sigmoid layer
         self.fc = nn.Linear(self.hidden_dim, output_dim)
@@ -156,7 +156,7 @@ def acc(pred,label):
 #TRAINING
 #%%
 clip = 5
-epochs = 3
+epochs = 5
 train_loss_min = np.Inf
 # train for some number of epochs
 epoch_tr_loss,epoch_vl_loss = [],[]
@@ -198,7 +198,7 @@ for epoch in range(epochs):
     print(f'train_loss : {epoch_train_loss} val_loss : {0}')
     print(f'train_accuracy : {epoch_train_acc*100} val_accuracy : {0}')
     if epoch_train_loss <= train_loss_min:
-        torch.save(model.state_dict(), './state_dict.pt')
+        torch.save(model.state_dict(), './state_dict_processing.pt')
         print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(train_loss_min,epoch_train_loss))
         train_loss_min = epoch_train_loss
     print(25*'==')
@@ -217,6 +217,10 @@ TN = 0
 FP = 0
 FN = 0
 
+predictions = []
+probabilities = []
+
+
 model.eval()
 for inputs, labels in test_loader:
     h = tuple([each.data for each in h])
@@ -224,7 +228,12 @@ for inputs, labels in test_loader:
     output, h = model(inputs, h)
     test_loss = criterion(output.squeeze(), labels.float())
     test_losses.append(test_loss.item())
+    probab = output.squeeze().cpu().detach().numpy()
+    probabilities.extend(probab)
+    
     pred = torch.round(output.squeeze())  # Rounds the output to 0/1
+    predictions.extend(pred.cpu().detach().numpy())
+    
     correct_tensor = pred.eq(labels.float().view_as(pred))
     correct = np.squeeze(correct_tensor.cpu().numpy())
     
@@ -256,9 +265,20 @@ print("Precision: ", precision)
 recall = TP / (TP + FN)
 print("Recal:", recall)
 print("F1", 2 * (precision * recall) / (precision + recall))
+
+#%%
+ids_test = x_test.index[0:7488]
+
+list_of_all = list(zip(ids_test, y_test['sentiment'][0:7488], predictions, probabilities))
+
+# Converting lists of tuples into pandas Dataframe.
+df_prob = pd.DataFrame(list_of_all, columns=['Id', 'Label', 'Prediction', 'Probability'])
+
+df_prob.to_csv('predictions/bilstm_IMDB_preprocess.csv', index=False)
+
 # %%
 #neutral dataset
-neutral = pd.read_csv('neutral_dataset.csv', converters = {'Phrase': str})
+neutral = pd.read_csv('data/neutral_dataset_without_preprocessing.csv', converters = {'Phrase': str})
 
 #GLOVE
 dirname = os.path.dirname(__file__)
@@ -289,9 +309,13 @@ print(model)
 criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-model.load_state_dict(torch.load('./state_dict.pt'), strict=False)
+model.load_state_dict(torch.load('./state_dict_without_processing.pt'), strict=False)
 
 #%%
+
+predictions_neutral = []
+probabilities_neutral = []
+
 test_losses = []
 num_correct = 0
 h = model.init_hidden(batch_size)
@@ -307,11 +331,16 @@ for inputs, labels in neutral_loader:
     h = tuple([each.data for each in h])
     inputs, labels = inputs.to(device), labels.to(device)
     output, h = model(inputs, h)
+    
+    probab = output.squeeze().cpu().detach().numpy()
+    probabilities_neutral.extend(probab)
+    
 #    test_loss = criterion(output.squeeze(), labels.float())
 #    test_losses.append(test_loss.item())
     pred = torch.round(output.squeeze())  # Rounds the output to 0/1
 #    correct_tensor = pred.eq(labels.float().view_as(pred))
 #    correct = np.squeeze(correct_tensor.cpu().numpy())
+    predictions_neutral.extend(pred.cpu().detach().numpy())
     
     
     for i in range(0, len(pred)):
@@ -345,4 +374,36 @@ print("NN: ", NN)
 #recall = TP / (TP + FN)
 #print("Recal:", recall)
 #print("F1", 2 * (precision * recall) / (precision + recall))
+# %%
+ids_neutral = neutral.index
+
+list_of_all_neutral = list(zip(ids_neutral, neutral['Sentiment'][0:8512], predictions_neutral, probabilities_neutral))
+
+# Converting lists of tuples into pandas Dataframe.
+df_prob_neutral = pd.DataFrame(list_of_all_neutral, columns=['Id', 'Label', 'Prediction', 'Probability'])
+
+df_prob_neutral.to_csv('predictions/bilstm_neutral_without_preprocess.csv', index=False)
+
+
+
+
+#%%
+#PLOTTANJE
+#%%
+fig = plt.figure(figsize = (20, 6))
+plt.subplot(1, 2, 1)
+plt.plot(epoch_tr_acc, label='Train Acc')
+plt.plot(epoch_vl_acc, label='Validation Acc')
+plt.title("Accuracy")
+plt.legend()
+plt.grid()
+    
+plt.subplot(1, 2, 2)
+plt.plot(epoch_tr_loss, label='Train loss')
+plt.plot(epoch_vl_loss, label='Validation loss')
+plt.title("Loss")
+plt.legend()
+plt.grid()
+
+plt.show()
 # %%
