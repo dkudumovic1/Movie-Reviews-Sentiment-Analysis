@@ -68,4 +68,30 @@ def remove_punct(text):
             ans+=i    
             
     return ans
-# %%
+
+
+def remove_overlap_words(df, column='review'):
+    df[column] = df[column].transform(remove_overlap)
+
+    return df
+
+def remove_overlap(s):
+    s = s.lower()
+    
+    s = s.replace("movie", "")
+    s = s.replace("film", "")
+    s = s.replace("it", "")
+    s = s.replace("like", "")
+    s = s.replace("good", "")
+    s = s.replace("story", "")
+    s = s.replace("time", "")
+    s = s.replace("movies", "")
+    s = s.replace("people", "")
+    s = s.replace("watch", "")
+    s = s.replace("seen", "")
+    s = s.replace("way", "")
+    s = s.replace("think", "")
+    s = s.replace("don", "")
+    
+    return s
+    
