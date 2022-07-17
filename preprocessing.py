@@ -22,7 +22,7 @@ df['sentiment'] = Encoder.fit_transform(df['sentiment'])
 #%%
 #TRAIN TEST SPLIT
 #1 - positive, 0 - negative
-x_train, x_test, y_train, y_test = train_test_split(df['review'],df['sentiment'],test_size=0.15, shuffle=True)
+x_train, x_test, y_train, y_test = train_test_split(df['review'], df['sentiment'],test_size=0.15, shuffle=True)
 
 x_train.to_csv('x_train_without_preprocessing.csv', index = False, encoding='utf-8')
 x_test.to_csv('x_test_without_preprocessing.csv', index = False, encoding='utf-8')
