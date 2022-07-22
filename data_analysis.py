@@ -20,6 +20,7 @@ print("Positive count: " + str(positive))
 print("Negative count: " + str(negative))
 
 #%%
+#average length of review
 
 import matplotlib.pyplot as plt
 
