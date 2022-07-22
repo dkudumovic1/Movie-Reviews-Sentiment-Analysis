@@ -3,8 +3,8 @@ import pandas as pd
 from utils import preprocessing
 
 #CLEANING DATASET
-train = pd.read_csv('train.tsv', sep='\t')
-test = pd.read_csv('test.tsv', sep='\t')
+train = pd.read_csv('data/train.tsv', sep='\t')
+test = pd.read_csv('data/test.tsv', sep='\t')
 
 data = pd.concat([train, test], ignore_index=True)
 data = data.drop('PhraseId', axis=1)

@@ -1,10 +1,13 @@
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.models import KeyedVectors
+from gensim.models.doc2vec import LabeledSentence
 import gensim
 import numpy as np
 import pandas as pd
 from keras.preprocessing.text import Tokenizer
+from tqdm import tqdm
+tqdm.pandas(desc="progress-bar")
 
 #count vectorizer
 def get_count_vector(x_train, x_test, ngram_range=None, min_df=0.0002, remove_stopwords=False):
@@ -94,6 +97,40 @@ def get_word2vec_embedding(model, x_train, x_test):
     
     return x_train_vector, x_test_vector
 
+#helper functions for doc2vec
+def add_label(twt):
+    twt = twt.apply(lambda x: x.split())
+
+    output = []
+    for i, s in zip(twt.index, twt):
+        output.append(LabeledSentence(s, ["tweet_" + str(i)]))
+    return output
+
+def create_doc2vec_model(x_train):
+    labeled_x_train = add_label(x_train)
+
+    model_d2v = gensim.models.Doc2Vec(dm=1,  # dm = 1 for ‘distributed memory’ model
+                                      dm_mean=1,  # dm_mean = 1 for using mean of the context word vectors
+                                      vector_size=200,  # no. of desired features
+                                      window=5,  # width of the context window
+                                      negative=7,  # if > 0 then negative sampling will be used
+                                      min_count=5,
+                                      # Ignores all words with total frequency lower than 5.
+                                      workers=32,  # no. of cores
+                                      alpha=0.1,  # learning rate
+                                      seed=23,  # for reproducibility
+                                      )
+
+    model_d2v.build_vocab([i for i in tqdm(labeled_x_train)])
+
+    model_d2v.train(labeled_x_train, total_examples=len(x_train), epochs=15)
+
+    x_train_tokenized = x_train.apply(lambda x: x.split())
+    docvec_arrays = np.zeros((len(x_train_tokenized), 200))
+    for i in range(len(x_train)): #combi
+        docvec_arrays[i, :] = model_d2v.docvecs[i].reshape((1, 200))
+
+    docvec_df = pd.DataFrame(docvec_arrays)
 
 #helper function for glove
 def glove_word_vector(model, tokens, size):
